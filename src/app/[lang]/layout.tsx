@@ -16,7 +16,7 @@ async function getGlobal(lang: string): Promise<any> {
   if (!apiUrl)
     throw new Error("The API URL variable is not set.");
 
-  const path = `/app/GLOBAL/en-AU/common`;
+  const path = `/app/GLOBAL/${lang}/common`;
 
   return await fetchAPI(path, {}, {});
 }

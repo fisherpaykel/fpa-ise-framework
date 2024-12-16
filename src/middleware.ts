@@ -20,34 +20,29 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
-    // // `/_next/` and `/api/` are ignored by the watcher, but we need to ignore files in `public` manually.
-    // // If you have one
+
+    // Ignore specific paths
     if (
-        
         [
             '/manifest.json',
             '/favicon.ico',
-            // Your other files in `public`
+            '/sw.js', // Other static files you want to exclude
         ].includes(pathname)
-    )
-        return;
+    ) {
+        return NextResponse.next();
+    }
 
-    // Check if there is any supported locale in the pathname
+    // Check if the pathname is missing a locale
     const pathnameIsMissingLocale = i18n.locales.every(
         (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
     );
-    
-    if (pathname === '/sw.js') return NextResponse.next();
 
-    // Redirect if there is no locale
-    // if (pathnameIsMissingLocale) {
-    //     const locale = getLocale(request);
-    //     // e.g. incoming request is /products
-    //     // The new URL is now /en-US/products
-    //     return NextResponse.redirect(new URL(`${locale}/home`, request.url));
-    // }
+    if (pathnameIsMissingLocale) {
+        const locale = getLocale(request);
+        return NextResponse.redirect(new URL(`/${locale}/home`, request.url));
+    }
 
-    
+    return NextResponse.next();
 }
 
 export const config = {
