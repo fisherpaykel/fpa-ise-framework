@@ -11,30 +11,12 @@ import { FALLBACK_SEO } from "@/app/[lang]/utils/constants";
 import { ChakraProvider } from "@chakra-ui/react";
 
 async function getGlobal(lang: string): Promise<any> {
-  const token = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+  const apiUrl = process.env.NEXT_PUBLIC_ISE_API_URL;
 
-  if (!token)
-    throw new Error("The Strapi API Token environment variable is not set.");
+  if (!apiUrl)
+    throw new Error("The API URL variable is not set.");
 
   const path = `/app/GLOBAL/en-AU/common`;
-  const options = { headers: { Authorization: `Bearer ${token}` } };
-
-  const urlParamsObject = {
-    populate: [
-      "metadata.shareImage",
-      "metadata.metas",
-      "favicon",
-      "notificationBanner.link",
-      "navbar.links",
-      "navbar.navbarLogo.logoImg",
-      "footer.footerLogo.logoImg",
-      "footer.menuLinks",
-      "footer.legalLinks",
-      "footer.socialLinks",
-      "footer.categories",
-    ],
-    locale: lang, //lang,
-  };
 
   return await fetchAPI(path, {}, {});
 }
