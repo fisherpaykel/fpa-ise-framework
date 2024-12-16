@@ -1,51 +1,27 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-
-import { i18n } from '../i18n-config';
-
-import { match as matchLocale } from '@formatjs/intl-localematcher';
-import Negotiator from 'negotiator';
-
-function getLocale(request: NextRequest): string | undefined {
-    // Negotiator expects plain object so we need to transform headers
-    const negotiatorHeaders: Record<string, string> = {};
-    request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
-
-    // Use negotiator and intl-localematcher to get best locale
-    let languages = new Negotiator({ headers: negotiatorHeaders }).languages();
-    // @ts-ignore locales are readonly
-    const locales: string[] = i18n.locales;
-    return matchLocale(languages, locales, i18n.defaultLocale);
-}
+import { i18n, isCountryCode, isLocale } from '../i18n-config';
 
 export function middleware(request: NextRequest) {
-    const pathname = request.nextUrl.pathname;
-
-    // Ignore specific paths
-    if (
-        [
-            '/manifest.json',
-            '/favicon.ico',
-            '/sw.js', // Other static files you want to exclude
-        ].includes(pathname)
-    ) {
-        return NextResponse.next();
+    const { pathname } = request.nextUrl;
+  
+    // Split pathname into segments
+    const segments = pathname.split('/').filter(Boolean);
+    const [countryCode, lang] = segments;
+  
+    // Check if path already has valid countryCode and lang
+    if (isCountryCode(countryCode) && isLocale(lang)) {
+      return NextResponse.next(); // No redirect needed
     }
-
-    // Check if the pathname is missing a locale
-    const pathnameIsMissingLocale = i18n.locales.every(
-        (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
-    );
-
-    if (pathnameIsMissingLocale) {
-        const locale = getLocale(request);
-        return NextResponse.redirect(new URL(`/${locale}/home`, request.url));
-    }
-
-    return NextResponse.next();
-}
-
-export const config = {
-    // Matcher ignoring `/_next/` and `/api/`
-    matcher: ['/((?!_next).*)'],
-};
+  
+    // Redirect to the default route if missing
+    const defaultCountryCode = i18n.defaultCountryCode;
+    const defaultLocale = i18n.defaultLocale;
+  
+    const newUrl = new URL(`/${defaultCountryCode}/${defaultLocale}/home`, request.url);
+    return NextResponse.redirect(newUrl);
+  }
+  
+  export const config = {
+    matcher: '/((?!_next|api|favicon.ico|manifest.json|sw.js).*)',
+  };
