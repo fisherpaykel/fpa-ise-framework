@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { getStrapiMedia, getStrapiURL } from "./utils/api-helpers";
 import { fetchAPI } from "./utils/fetch-api";
-
 import { i18n } from "../../../../i18n-config";
-import Banner from "./components/Banner";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { FALLBACK_SEO } from "@/app/[countryCode]/[lang]/utils/constants";
@@ -30,7 +28,6 @@ export async function generateMetadata({
   if (!meta.data) return FALLBACK_SEO;
 
   const { metadata, favicon } = meta.data[0].attributes;
-  // const { url } = favicon.data.attributes;
   return {
     title: metadata.metas.data[0].metaTitle,
     description: metadata.metas.data[0].metaDescription,
@@ -47,16 +44,13 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: { lang: string };
 }) {
-  //await getAllProducts()
   const global = await getGlobal(params.lang);
   // TODO: CREATE A CUSTOM ERROR PAGE
   if (!global.data) return null;
 
-  const { notificationBanner, navbar, footer, metadata } = global.data[0].attributes;
+  const { navbar, footer } = global.data[0].attributes;
 
   const navbarLogoUrl = getStrapiMedia(navbar.navbarLogo.logoImg);
-
-  const footerLogoUrl = getStrapiMedia(footer.footerLogo.logoImg);
   return (
     <html lang={params.lang}>
       <head>
@@ -82,8 +76,6 @@ export default async function RootLayout({
           >
             {children}
           </main>
-
-          <Banner data={notificationBanner} />
 
           <Footer
             menuLinks={footer.menuLinks.data}

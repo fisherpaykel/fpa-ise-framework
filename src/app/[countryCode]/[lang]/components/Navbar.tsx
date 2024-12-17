@@ -1,13 +1,10 @@
-"use client";
-import Logo from "./Logo";
+"use client";;
 import Link from "next/link";
 import { usePathname} from "next/navigation";
-import { Dialog } from '@headlessui/react'
-import { useEffect, useRef, useState } from "react";
 import { Header } from "@fpapackages/fpa-header";
 import { useRouter } from "next/navigation"
 import { useNavbarConfig } from '../utils/useNavbarConfig'
-// import { useProductsQuery } from "../hooks/useProductsQuery";
+
 interface NavLink {
   id: number;
   url: string;
@@ -50,21 +47,6 @@ export default function Navbar({
   hideHeader: boolean
 }) {
   const router = useRouter();
-  const currentPage = usePathname().split('/');
-  const shouldLog = useRef(true);
-  let categoryName = 'refrigeration';
-  // if(currentPage.length> 3) {
-  //   categoryName = currentPage[3].toLocaleLowerCase();
-  // }
-
-  // const {getProducts} = useProductsQuery();
-  // useEffect(() => {
-  //   if (shouldLog.current) {
-  //     shouldLog.current = false;
-  //     console.log('logged');
-  //     getProducts(categoryName);
-  //   }
-  // }, [categoryName]);
 
 // Listening to all changes, fires synchronously on every change
 const {title: navbarTitle, hideTitle: hideNavbarTitle, hideHeader: hideNavbar} = useNavbarConfig();

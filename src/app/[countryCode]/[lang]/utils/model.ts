@@ -1,8 +1,3 @@
-type StrapiResponse<T> = {
-  data: T;
-  message: string;
-};
-
 export interface Attribute {
 	url: string;
 	alternativeText?: any;
