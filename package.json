@@ -1,15 +1,14 @@
 {
-  "name": "next-pwa",
-  "version": "5.6.0",
-  "description": "Next.js with PWA, powered by workbox.",
-  "repository": "https://github.com/fisherpaykel/fpa-nextjs-pwa-kit",
-  "author": "chandanrjit",
-  "license": "MIT",
+  "name": "fpa-ise-framework",
+  "version": "1.0.0",
+  "description": "Fisher & Paykel Appliances - ISE Framework",
+  "repository": "https://github.com/fisherpaykel/fpa-ise-framework",
+  "author": "Fisher & Paykel Appliances",
   "private": false,
   "keywords": [
     "nextjs",
     "pwa",
-    "workbox",
+    "ise",
     "web",
     "service-worker"
   ],
