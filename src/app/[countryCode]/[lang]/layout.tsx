@@ -30,10 +30,7 @@ export async function generateMetadata({
   const { metadata, favicon } = meta.data[0].attributes;
   return {
     title: metadata.metas.data[0].metaTitle,
-    description: metadata.metas.data[0].metaDescription,
-    icons: {
-      icon: [new URL(favicon, getStrapiURL())],
-    },
+    description: metadata.metas.data[0].metaDescription
   };
 }
 
