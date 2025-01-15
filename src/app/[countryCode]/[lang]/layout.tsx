@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { FALLBACK_SEO } from "@/app/[countryCode]/[lang]/utils/constants";
 import { ChakraProvider } from "@chakra-ui/react";
+import BackgroundFetchComponent from './components/BackgroundFetchComponent';
 
 async function getGlobal(lang: string): Promise<any> {
   const apiUrl = process.env.NEXT_PUBLIC_ISE_API_URL;
@@ -66,7 +67,7 @@ export default async function RootLayout({
             hideTitle={navbar.hideTitle}
             hideHeader={navbar.hideHeader}
           />
-
+          <BackgroundFetchComponent></BackgroundFetchComponent>
           <main
             className="p-6"
             style={{ maxHeight: "calc(100vh - 130px)", overflowX: "scroll" }}
