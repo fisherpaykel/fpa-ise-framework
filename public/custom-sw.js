@@ -18,13 +18,6 @@ self.addEventListener('sync', (event) => {
     }
 });
 
-self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'product-sync') {
-      console.log('Periodic background sync triggered');
-      event.waitUntil(updateData());
-    }
-});
-
 const updateData = async () => {
   try {
     const mergedOptions = {
@@ -33,7 +26,8 @@ const updateData = async () => {
           "x-api-key": "sqJloNXnU03KJktputFLQ2T0icIGeZDn364lxSAA"
         },
     };
-    const response = await fetch('https://api.fisherpaykel.com/dev/v1/products?brandName=fpa', mergedOptions);
+    // const response = await fetch('https://api.fisherpaykel.com/dev/v1/products?brandName=fpa', mergedOptions);
+    const response = await fetch('https://firestore.googleapis.com/v1/projects/fpa-pwa/databases/(default)/documents/products/lqUhZdsMYF8FgUqH7aML', {});
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -46,6 +40,7 @@ const updateData = async () => {
     await store.put(data, 'latest');
 
     console.log('Data successfully updated in IndexedDB during background sync');
+    console.log(data)
   } catch (error) {
     console.error('Error updating data during background sync:', error);
   }

@@ -76,31 +76,7 @@ const BackgroundFetchComponent = () => {
       console.error('Failed to register background sync:', error);
     }
   };
-
-  const registerPeriodicSync = async () => {
-    if ('serviceWorker' in navigator && 'periodicSync' in navigator.serviceWorker) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        if (registration.periodicSync) {
-          await registration.periodicSync.register('product-sync', {
-            minInterval: 24 * 60 * 60 * 1000, // 24 hours
-          });
-          console.log('Periodic sync registered');
-        } else {
-          console.warn('Periodic Background Sync is not supported in this browser');
-        }
-      } catch (error) {
-        console.error('Failed to register periodic sync:', error);
-      }
-    } else {
-      console.warn('Periodic Background Sync is not supported in this browser');
-    }
-  };
   
-  
-  useEffect(() => {
-    registerPeriodicSync();
-  }, []);
   
   // Fetch initial data on mount
   useEffect(() => {
@@ -111,6 +87,12 @@ const BackgroundFetchComponent = () => {
   useEffect(() => {
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       registerMinuteSync();
+      const intervalId = setInterval(() => {
+        registerMinuteSync();
+      }, 2 * 60 * 1000); // 5 minutes in milliseconds
+
+      // Cleanup interval on component unmount
+      return () => clearInterval(intervalId);
     }
   }, []);
 
@@ -119,7 +101,7 @@ const BackgroundFetchComponent = () => {
       {loading && <p>Loading...</p>}
       <h1>Background Fetch Component</h1>
       <p>{progress}</p>
-      <button onClick={fetchDataFromServiceWorker} id="bgFetchButton" disabled={loading}>
+      <button onClick={fetchDataFromServiceWorker} id="bgFetchButton">
         Fetch Data
       </button>
     </div>
