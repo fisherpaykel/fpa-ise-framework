@@ -85,11 +85,13 @@ const BackgroundFetchComponent = () => {
 
   // Register background sync on mount
   useEffect(() => {
+    const timerInterval = parseInt(process.env.REACT_APP_TIMER_INTERVAL || '120000', 10); // Default to 2 minutes
+    
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       registerMinuteSync();
       const intervalId = setInterval(() => {
         registerMinuteSync();
-      }, 2 * 60 * 1000); // 5 minutes in milliseconds
+      }, timerInterval); // 5 minutes in milliseconds
 
       // Cleanup interval on component unmount
       return () => clearInterval(intervalId);
