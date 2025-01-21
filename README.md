@@ -8,6 +8,28 @@ The FPA ISE project is a framework designed to help developers build Progressive
 - **Responsive Design**: Ensures your application looks great on all devices.
 - **Performance Optimizations**: Includes techniques to improve load times and overall performance.
 
+## Prerequisites
+- Node.js (v16.x or higher)
+- npm (v8.x or higher)
+- Git
+
+
+## Project Structure
+```bash
+fpa-ise-framework/
+├── src/
+│   ├── app/
+│   │   ├── [countryCode]/
+│   │   │   └── [lang]/
+│   ├── components/
+│   ├── hooks/
+│   ├── services/
+│   └── utils/
+├── public/
+│   ├── icons/
+│   └── manifest.json
+├── tests/
+└── config/
 
 ## Project Configuration
 To get started with the FPA ISE Framework, you need add following Url to fetcht the data. For local setup add a .env file and add following line to the file.
@@ -55,3 +77,5 @@ You can access the framework using http://localhost:3000
 
 ## Contact
 For any questions or support, please contact Integration & Software Development team.
+License
+Proprietary - Fisher & Paykel Appliance Ltd.
