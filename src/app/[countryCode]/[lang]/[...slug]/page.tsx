@@ -12,7 +12,6 @@ type Props = {
     }
 }
 
-
 export async function generateMetadata({params}: Props): Promise<Metadata> {
     const page = await getPageBySlug(params.countryCode, params.slug, params.lang);
 
