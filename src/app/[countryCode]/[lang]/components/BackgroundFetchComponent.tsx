@@ -28,22 +28,15 @@ const BackgroundFetchComponent = () => {
         console.error('Failed to register background sync:', error);
       }
     };
-  
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      console.log('Background Sync is supported');
-      
       // Register the first sync immediately
       registerMinuteSync();
-  
       // Set up interval for periodic registration
       const intervalId = setInterval(() => {
-        console.log('Re-registering background sync');
         registerMinuteSync();
       }, timerInterval);
-  
       // Cleanup interval on component unmount
       return () => {
-        console.log('Cleaning up interval');
         clearInterval(intervalId);
       };
     } else {

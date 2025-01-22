@@ -18,14 +18,12 @@ const TABLE_NAME = 'Product';
 const OFFLINE_PAGE = './offline.html'
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
   event.waitUntil(
     (async () => {
       const cache = await caches.open('static-cache');
       const resources = ['/', '/offline.html'];
       for (const resource of resources) {
         try {
-          console.log(`[SW] Caching resource: ${resource}`);
           await cache.add(resource);
         } catch (error) {
           console.error(`[SW] Failed to cache resource: ${resource}`, error);
@@ -37,7 +35,6 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
   event.waitUntil(
     (async () => {
       await clients.claim();
@@ -54,11 +51,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         if (cachedResponse) {
-          console.log('[SW] Serving cached page:', event.request.url);
           return cachedResponse;
         }
         return fetch(event.request).catch(() => {
-          console.warn('[SW] Fetch failed; serving offline page');
           return caches.match(OFFLINE_PAGE);
         });
       })
