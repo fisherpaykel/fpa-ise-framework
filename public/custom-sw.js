@@ -1,51 +1,140 @@
-// Import the Workbox libraries (if required by your setup)
+// Import Workbox libraries
 import { precacheAndRoute } from 'workbox-precaching';
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { ExpirationPlugin } from 'workbox-expiration';
 
-// Precache manifest will be injected here during build
-precacheAndRoute(self.__WB_MANIFEST || []);
-
+// Precache static assets during the build
+precacheAndRoute(self.__WB_MANIFEST || [
+  { url: '/', revision: null },
+  { url: '/offline.html', revision: null },
+  { url: '/styles.css', revision: null },
+  { url: '/app.js', revision: null },
+]);
 
 const DB_NAME = 'ProductDB';
 const TABLE_NAME = 'Product';
 
-// Custom sync and message listeners
+self.addEventListener('install', (event) => {
+  console.log('Service worker installing...');
+  self.skipWaiting(); // Force the service worker to activate immediately
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service worker activated');
+  event.waitUntil(clients.claim()); // Claim clients so updates take effect immediately
+});
+
+// Cache CSS, JS, and HTML
+registerRoute(
+  ({ request }) =>
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'document',
+  new StaleWhileRevalidate({
+    cacheName: 'static-resources',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
+    ],
+  })
+);
+
+// Cache images
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'image-cache',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 60 * 24 * 60 * 60 }),
+    ],
+  })
+);
+
+// Cache CMS API requests
+registerRoute(
+  ({ url }) => url.origin === 'https://api.fisherpaykel.com' && url.pathname.startsWith('/uat/v4/cms'),
+  new NetworkFirst({
+    cacheName: 'cms-api-cache',
+    networkTimeoutSeconds: 10, // Fallback to cache after 10 seconds
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200], // Cache successful and opaque responses
+      }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 24 * 60 * 60, // Cache for 1 day
+      }),
+    ],
+  })
+);
+
+// Cache other API responses
+registerRoute(
+  ({ url }) => url.origin === 'https://firestore.googleapis.com',
+  new NetworkFirst({
+    cacheName: 'api-cache',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 24 * 60 * 60, // Cache for 1 day
+      }),
+    ],
+  })
+);
+
+// Fallback for navigation requests
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse; // Serve cached page
+        }
+
+        return fetch(event.request).catch(() => caches.match('/offline.html')); // Fallback to offline page
+      })
+    );
+  }
+});
+
+// Handle background sync
 self.addEventListener('sync', (event) => {
-    if (event.tag === 'minute-sync') {
-      console.log('Background sync triggered');
-      event.waitUntil(updateData());
-    } else {
-      console.log(`Unknown sync tag: ${event.tag}`);
-    }
+  if (event.tag === 'minute-sync') {
+    console.log('Background sync triggered');
+    event.waitUntil(updateData());
+  } else {
+    console.log(`Unknown sync tag: ${event.tag}`);
+  }
 });
 
 const updateData = async () => {
   try {
-    const mergedOptions = {
-        next: { revalidate: 60 },
-        headers: {
-          "x-api-key": "sqJloNXnU03KJktputFLQ2T0icIGeZDn364lxSAA"
-        },
-    };
-    // const response = await fetch('https://api.fisherpaykel.com/dev/v1/products?brandName=fpa', mergedOptions);
-    const response = await fetch('https://firestore.googleapis.com/v1/projects/fpa-pwa/databases/(default)/documents/products/lqUhZdsMYF8FgUqH7aML', {});
+    const response = await fetch('https://firestore.googleapis.com/v1/projects/fpa-pwa/databases/(default)/documents/products/lqUhZdsMYF8FgUqH7aML');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
 
+    // Save the data to IndexedDB
     const db = await openDatabase();
     const transaction = db.transaction(TABLE_NAME, 'readwrite');
     const store = transaction.objectStore(TABLE_NAME);
     await store.put(data, 'latest');
 
-    console.log('Data successfully updated in IndexedDB during background sync');
-    console.log(data)
+    console.log('Data successfully updated in IndexedDB');
+    return data;
   } catch (error) {
     console.error('Error updating data during background sync:', error);
   }
 };
 
+// IndexedDB operations
 const openDatabase = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -62,29 +151,5 @@ const openDatabase = () => {
   });
 };
 
-self.addEventListener('message', async (event) => {
-  const { action } = event.data;
-
-  if (action === 'fetchUpdate') {
-    console.log('Message received: Fetch update requested');
-    await updateData();
-  }
-
-  if (action === 'getData') {
-    console.log('Message received: Get data requested');
-    const db = await openDatabase();
-    const transaction = db.transaction(TABLE_NAME, 'readonly');
-    const store = transaction.objectStore(TABLE_NAME);
-    const request = store.get('latest');
-
-    request.onsuccess = () => {
-      event.source.postMessage({ action: 'sendData', payload: request.result });
-    };
-
-    request.onerror = () => {
-      console.error('Failed to retrieve data from IndexedDB');
-    };
-  }
-});
 
 console.log('Custom service worker loaded');
