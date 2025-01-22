@@ -10,41 +10,6 @@ interface ServiceWorkerRegistration {
   }
 
 const BackgroundFetchComponent = () => {
-  const [data, setData] = useState<Record<string, any> | null>(null);
-  const [progress, setProgress] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Post a message to the service worker
-  const postMessageToServiceWorker = useCallback((message: any) => {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(message);
-    } else {
-      console.warn('No active service worker to send message to');
-    }
-  }, []);
-
-
-  // Trigger data fetch and update through the service worker
-  const triggerFetchUpdate = useCallback(() => {
-    setProgress('Triggering service worker to fetch and update data...');
-    postMessageToServiceWorker({ action: 'fetchUpdate' });
-  }, [postMessageToServiceWorker]);
-
-  // Register background sync
-  const registerMinuteSync = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      if ('sync' in registration) {
-        await (registration as ServiceWorkerRegistration & { sync: SyncManager }).sync.register('minute-sync');
-        console.log('Minute sync registered');
-      } else {
-        console.warn('Background Sync not supported');
-      }
-    } catch (error) {
-      console.error('Failed to register background sync:', error);
-    }
-  }
-
   // Register background sync on mount
   useEffect(() => {
     const timerInterval = parseInt(process.env.REACT_APP_TIMER_INTERVAL || '120000', 10); // Default to 2 minutes
@@ -85,6 +50,15 @@ const BackgroundFetchComponent = () => {
       console.error('Background Sync is not supported in this environment.');
     }
   }, []);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data.type === 'RELOAD_PAGE') {
+        console.log('[SW] Reloading page for full control');
+        window.location.reload();
+      }
+    });
+  }
 
   return (
     <></>

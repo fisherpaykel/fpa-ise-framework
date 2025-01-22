@@ -15,15 +15,55 @@ precacheAndRoute(self.__WB_MANIFEST || [
 
 const DB_NAME = 'ProductDB';
 const TABLE_NAME = 'Product';
+const OFFLINE_PAGE = './offline.html'
 
 self.addEventListener('install', (event) => {
-  console.log('Service worker installing...');
-  self.skipWaiting(); // Force the service worker to activate immediately
+  console.log('[SW] Installing...');
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open('static-cache');
+      const resources = ['/', '/offline.html'];
+      for (const resource of resources) {
+        try {
+          console.log(`[SW] Caching resource: ${resource}`);
+          await cache.add(resource);
+        } catch (error) {
+          console.error(`[SW] Failed to cache resource: ${resource}`, error);
+        }
+      }
+    })()
+  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('Service worker activated');
-  event.waitUntil(clients.claim()); // Claim clients so updates take effect immediately
+  console.log('[SW] Activating...');
+  event.waitUntil(
+    (async () => {
+      await clients.claim();
+      const clientList = await clients.matchAll();
+      clientList.forEach((client) =>
+        client.postMessage({ type: 'RELOAD_PAGE' })
+      );
+    })()
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          console.log('[SW] Serving cached page:', event.request.url);
+          return cachedResponse;
+        }
+        return fetch(event.request).catch(() => {
+          console.warn('[SW] Fetch failed; serving offline page');
+          return caches.match(OFFLINE_PAGE);
+        });
+      })
+    );
+  }
 });
 
 // Cache CSS, JS, and HTML
@@ -86,21 +126,6 @@ registerRoute(
     ],
   })
 );
-
-// Fallback for navigation requests
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse; // Serve cached page
-        }
-
-        return fetch(event.request).catch(() => caches.match('/offline.html')); // Fallback to offline page
-      })
-    );
-  }
-});
 
 // Handle background sync
 self.addEventListener('sync', (event) => {
