@@ -10,103 +10,51 @@ interface ServiceWorkerRegistration {
   }
 
 const BackgroundFetchComponent = () => {
-  const [data, setData] = useState<Record<string, any> | null>(null);
-  const [progress, setProgress] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Post a message to the service worker
-  const postMessageToServiceWorker = useCallback((message: any) => {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(message);
-    } else {
-      console.warn('No active service worker to send message to');
-    }
-  }, []);
-
-  // Fetch data from the service worker
-  const fetchDataFromServiceWorker = useCallback(async () => {
-    try {
-      setLoading(true);
-      setProgress('Requesting data from service worker...');
-
-      const storedData: any = await new Promise((resolve, reject) => {
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data && event.data.action === 'sendData') {
-            resolve(event.data.payload);
-            navigator.serviceWorker.removeEventListener('message', handleMessage);
-          }
-        };
-
-        navigator.serviceWorker.addEventListener('message', handleMessage);
-        postMessageToServiceWorker({ action: 'getData' });
-      });
-
-      if (storedData) {
-        setData(storedData);
-        console.log(storedData)
-        setProgress('Data fetched successfully from service worker.');
-      } else {
-        setProgress('No data available.');
-      }
-    } catch (error) {
-      console.error('Failed to fetch data from service worker:', error);
-      setProgress('Error fetching data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [postMessageToServiceWorker]);
-
-  // Trigger data fetch and update through the service worker
-  const triggerFetchUpdate = useCallback(() => {
-    setProgress('Triggering service worker to fetch and update data...');
-    postMessageToServiceWorker({ action: 'fetchUpdate' });
-  }, [postMessageToServiceWorker]);
-
-  // Register background sync
-  const registerMinuteSync = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      if ('sync' in registration) {
-        await (registration as ServiceWorkerRegistration & { sync: SyncManager }).sync.register('minute-sync');
-        console.log('Minute sync registered');
-      } else {
-        console.warn('Background Sync not supported');
-      }
-    } catch (error) {
-      console.error('Failed to register background sync:', error);
-    }
-  };
-  
-  
-  // Fetch initial data on mount
-  useEffect(() => {
-    fetchDataFromServiceWorker();
-  }, [fetchDataFromServiceWorker]);
-
   // Register background sync on mount
   useEffect(() => {
     const timerInterval = parseInt(process.env.REACT_APP_TIMER_INTERVAL || '120000', 10); // Default to 2 minutes
     
+    // Function to register background sync
+    const registerMinuteSync = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if ('sync' in registration) {
+          await (registration as ServiceWorkerRegistration & { sync: SyncManager }).sync.register('minute-sync');
+          console.log('Background sync registered successfully with tag: minute-sync');
+        } else {
+          console.error('SyncManager is not supported in this ServiceWorker registration.');
+        }
+      } catch (error) {
+        console.error('Failed to register background sync:', error);
+      }
+    };
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      // Register the first sync immediately
       registerMinuteSync();
+      // Set up interval for periodic registration
       const intervalId = setInterval(() => {
         registerMinuteSync();
-      }, timerInterval); // 5 minutes in milliseconds
-
+      }, timerInterval);
       // Cleanup interval on component unmount
-      return () => clearInterval(intervalId);
+      return () => {
+        clearInterval(intervalId);
+      };
+    } else {
+      console.error('Background Sync is not supported in this environment.');
     }
   }, []);
 
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data.type === 'RELOAD_PAGE') {
+        console.log('[SW] Reloading page for full control');
+        window.location.reload();
+      }
+    });
+  }
+
   return (
-    <div>
-      {loading && <p>Loading...</p>}
-      <h1>Background Fetch Component</h1>
-      <p>{progress}</p>
-      <button onClick={fetchDataFromServiceWorker} id="bgFetchButton">
-        Fetch Data
-      </button>
-    </div>
+    <></>
   );
 };
 
